@@ -5,25 +5,23 @@ import socket
 
 import data_layer
 
-# Мой локальный хост
+
 HOST = "127.0.0.1"
 PORT = 8080
 HEADER_SIZE_BYTES = 3
 OPCODE_SIZE_BYTES = 1
-# Константа порядка байт
+
 LITTLE_ENDIAN = "little"
-# Имя файла, в который сервер сохраняет историю запросов
+
 LOG_FILE = "journal.log"
 
 
-# Открывает файл с логами и дозаписывает строку с кодом операции и данными
 def log_request(opcode: int, payload: dict) -> None:
     """Append a request to the server journal."""
     with open(LOG_FILE, "a", encoding="utf-8") as file:
         file.write(f"Код: {opcode}, Данные: {payload}\n")
 
 
-# Вызывает нужную функцию слоя данных по коду операции
 def process_request(opcode: int, data: dict) -> tuple[int, dict]:
     """Dispatch a request to the corresponding data-layer function."""
     operations = {
@@ -63,7 +61,6 @@ def process_request(opcode: int, data: dict) -> tuple[int, dict]:
     return opcode, {"result": operation()}
 
 
-# Запускает TCP RPC сервер
 def run_server(host: str = HOST, port: int = PORT, ready_event=None) -> None:
     """Start the TCP server and process incoming connections."""
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
@@ -90,7 +87,6 @@ def _recv_exact(connection: socket.socket, size: int) -> bytes:
     return bytes(chunks)
 
 
-# Обрабатывает подключение клиента
 def handle_connection(connection: socket.socket) -> None:
     """Read one request, dispatch it, and send one response."""
     try:

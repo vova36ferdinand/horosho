@@ -8,7 +8,6 @@ MESSAGES = []
 LOGS = []
 
 
-# Создаю аккаунт
 def create_account(uid: int, ip: str, ts: float) -> list:
     """Create an account or update an existing account."""
     for account in ACCOUNTS:
@@ -22,13 +21,11 @@ def create_account(uid: int, ip: str, ts: float) -> list:
     return new_account
 
 
-# Даёт список всех аккаунтов
 def get_all_accounts() -> list:
     """Return all accounts."""
     return ACCOUNTS
 
 
-# Находит запись аккаунта по uID
 def get_account_by_id(uid: int) -> list | tuple | None:
     """Return an account by ID, or None if it does not exist."""
     for account in ACCOUNTS:
@@ -37,12 +34,11 @@ def get_account_by_id(uid: int) -> list | tuple | None:
     return None
 
 
-# Обновляем запись аккаунта по uID
-def update_account(uid: int, ip: str, timestamp: float) -> tuple | None:
+def update_account(uid: int, ip: str, timestamp: float) -> list | None:
     """Update an account by ID."""
     for index, account in enumerate(ACCOUNTS):
         if account[0] == uid:
-            updated = (uid, ip, timestamp)
+            updated = [uid, ip, timestamp]
             ACCOUNTS[index] = updated
             return updated
     return None
@@ -50,7 +46,7 @@ def update_account(uid: int, ip: str, timestamp: float) -> tuple | None:
 
 def create_message(msg_id: int, text: str, account: int) -> list:
     """Создает сообщение или обновляет существующее по msg_id."""
-    # или messages
+
     for message in MESSAGES:
         if message[0] == msg_id:
             message[1] = text
@@ -62,13 +58,11 @@ def create_message(msg_id: int, text: str, account: int) -> list:
     return new_message
 
 
-# Даёт список всех сообщений
 def get_all_messages() -> list:
     """Return all messages."""
     return MESSAGES
 
 
-# Ищет сообщение по его ID
 def get_message_by_id(uid: int) -> list | tuple | None:
     """Return a message by ID, or None if it does not exist."""
     for message in MESSAGES:
@@ -77,14 +71,13 @@ def get_message_by_id(uid: int) -> list | tuple | None:
     return None
 
 
-# Редактирует сообщение
 def update_message(
     uid: int, argument: str, account: int
-) -> tuple | None:
+) -> list | None:
     """Update a message by ID."""
     for index, message in enumerate(MESSAGES):
         if message[0] == uid:
-            updated = (uid, argument, account)
+            updated = [uid, argument, account]
             MESSAGES[index] = updated
             return updated
     return None
@@ -92,7 +85,7 @@ def update_message(
 
 def create_log(log_id: int, info: str, status: int) -> list:
     """Создает лог или обновляет существующий по log_id."""
-    # или logs
+
     for log_entry in LOGS:
         if log_entry[0] == log_id:
             log_entry[1] = info
@@ -104,13 +97,11 @@ def create_log(log_id: int, info: str, status: int) -> list:
     return new_log
 
 
-# Даёт список всех логов
 def get_all_logs() -> list:
     """Return all logs."""
     return LOGS
 
 
-# Находит запись лога по ID
 def get_log_by_id(uid: int) -> list | tuple | None:
     """Return a log by ID, or None if it does not exist."""
     for log_entry in LOGS:
@@ -119,18 +110,16 @@ def get_log_by_id(uid: int) -> list | tuple | None:
     return None
 
 
-# Обновляет данные лога по ID
-def update_log(uid: int, message: int, status: str) -> tuple | None:
+def update_log(uid: int, message: int, status: str) -> list | None:
     """Update a log by ID."""
     for index, log_entry in enumerate(LOGS):
         if log_entry[0] == uid:
-            updated = (uid, message, status)
+            updated = [uid, message, status]
             LOGS[index] = updated
             return updated
     return None
 
 
-# Выполняет выборку по формуле реляционной алгебры
 def select_recent_messages(now_timestamp: float) -> list:
     """Return messages linked to accounts active in the last eight minutes."""
     threshold = now_timestamp - TIME_LIMIT_MINUTES * SECONDS_IN_MINUTE

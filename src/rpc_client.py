@@ -9,16 +9,13 @@ LITTLE_ENDIAN = "little"
 REQUEST_TIMEOUT_SECONDS = 3
 
 
-# Клиент для выполнения удалённых вызовов процедур по TCP
 class RPCClient:
     """Client for calling database operations over TCP."""
 
-    # Инициализирует адрес сервера
     def __init__(self, host: str = "127.0.0.1", port: int = 8080) -> None:
         self.host = host
         self.port = port
 
-    # Отправляет запрос серверу по бинарному протоколу
     def _send_request(self, opcode: int, payload: dict) -> dict:
         """Send a request and return the server's result."""
         body_bytes = json.dumps(payload).encode("utf-8")
@@ -60,7 +57,6 @@ class RPCClient:
             chunks.extend(part)
         return bytes(chunks)
 
-    # Это все функции из data_layer.py, которые мы вызываем
     def create_account(self, uid: int, ip: str, timestamp: float) -> tuple:
         return self._send_request(
             1, {"uid": uid, "ip": ip, "timestamp": timestamp}

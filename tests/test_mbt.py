@@ -11,19 +11,19 @@ from rpc_server import run_server
 
 
 TEST_HOST = "127.0.0.1"
-TEST_PORT = None
+test_port = None
 
 
 def setup_module() -> None:
     """Запускает сервер на свободном порту и ждёт его готовности."""
-    global TEST_PORT
+    global test_port
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
         probe.bind((TEST_HOST, 0))
-        TEST_PORT = probe.getsockname()[1]
+        test_port = probe.getsockname()[1]
     ready = threading.Event()
     thread = threading.Thread(
         target=run_server,
-        kwargs={"host": TEST_HOST, "port": TEST_PORT, "ready_event": ready},
+        kwargs={"host": TEST_HOST, "port": test_port, "ready_event": ready},
         daemon=True,
     )
     thread.start()
@@ -36,7 +36,6 @@ class DatabaseStateMachine(RuleBasedStateMachine):
         """Инициализирует клиент, очищает БД сервера и эталонное состояние."""
         super().__init__()
 
-        # Очищаем все возможные списки/словари БД в data_layer
         collections = [
             "ACCOUNTS",
             "accounts",
@@ -49,16 +48,12 @@ class DatabaseStateMachine(RuleBasedStateMachine):
             if hasattr(data_layer, collection):
                 getattr(data_layer, collection).clear()
 
-        self.client = RPCClient(host=TEST_HOST, port=TEST_PORT)
+        self.client = RPCClient(host=TEST_HOST, port=test_port)
 
-        # Локальные эталонные модели
         self.model_accounts = {}
         self.model_messages = {}
         self.model_logs = {}
 
-    # ==========================================
-    # 1. АККАУНТЫ (Accounts)
-    # ==========================================
     @rule(
         uid=st.integers(min_value=1, max_value=100),
         ip=st.just("127.0.0.1"),
@@ -87,14 +82,11 @@ class DatabaseStateMachine(RuleBasedStateMachine):
     )
     def update_account(self, uid: int, ip: str, ts: float) -> None:
         res = self.client.update_account(uid, ip, ts)
-        # Если аккаунт есть в модели, он должен обновиться
+
         if uid in self.model_accounts:
             self.model_accounts[uid] = [uid, ip, ts]
             assert res == [uid, ip, ts]
 
-    # ==========================================
-    # 2. СООБЩЕНИЯ (Messages)
-    # ==========================================
     @rule(
         msg_id=st.integers(1, 100),
         text=st.text(min_size=1, max_size=20),
@@ -126,9 +118,6 @@ class DatabaseStateMachine(RuleBasedStateMachine):
             self.model_messages[msg_id] = [msg_id, text, account]
             assert res is not None
 
-    # ==========================================
-    # 3. ЛОГИ (Logs)
-    # ==========================================
     @rule(
         log_id=st.integers(1, 100),
         info=st.text(min_size=1, max_size=20),
@@ -160,19 +149,18 @@ class DatabaseStateMachine(RuleBasedStateMachine):
             self.model_logs[log_id] = [log_id, info, status]
             assert res is not None
 
-    # ==========================================
-    # 4. ВЫБОРКА ЗА 8 МИНУТ (Пункт 13)
-    # ==========================================
     @rule()
     def get_data_last_8_minutes(self) -> None:
         """Проверяет метод выборки за последние 8 минут."""
-        # Вызываем метод напрямую по его стандартному имени в RPCClient
-        if hasattr(self.client, "get_last_8_minutes"):
-            res = self.client.get_last_8_minutes()
-            assert isinstance(res, list)
-        elif hasattr(self.client, "get_eight_minutes"):
-            res = self.client.get_eight_minutes()
-            assert isinstance(res, list)
+
+        now_timestamp = 4000.0
+        threshold = now_timestamp - 8 * 60
+        expected = []
+        for message in self.model_messages.values():
+            account = self.model_accounts.get(message[2])
+            if account is not None and account[2] >= threshold:
+                expected.append([account[1], message[1]])
+        assert self.client.select_recent_messages(now_timestamp) == expected
 
 
 TestDatabaseRPC = DatabaseStateMachine.TestCase
