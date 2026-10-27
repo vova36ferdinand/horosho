@@ -18,7 +18,7 @@ if errorlevel 1 (
 py -c "import pytest, hypothesis, coverage" >nul 2>&1
 if errorlevel 1 (
     echo Installing required packages...
-    py -m pip install pytest hypothesis coverage
+    py -m pip install -r requirements-dev.txt
     if errorlevel 1 (
         echo ERROR: Package installation failed. Check your internet connection.
         pause
@@ -29,7 +29,7 @@ if errorlevel 1 (
 echo.
 echo Running tests...
 py -m coverage erase
-py -m coverage run --branch -m pytest -vv -s
+py -m coverage run --branch --source=src --omit="src/repl.py,src/__init__.py" -m pytest tests/test_mbt.py -vv -s
 if errorlevel 1 (
     echo.
     echo TESTS FAILED. The menu will not be started.
@@ -42,6 +42,15 @@ echo Coverage report:
 py -m coverage report -m
 if errorlevel 1 (
     echo ERROR: Could not generate coverage report.
+    pause
+    exit /b 1
+)
+
+echo.
+echo Running regression tests...
+py -m pytest -q --ignore=tests/test_mbt.py
+if errorlevel 1 (
+    echo ERROR: Regression tests failed.
     pause
     exit /b 1
 )

@@ -1,0 +1,17 @@
+Variant 15 - branch coverage from Hypothesis state-machine tests only
+Date: 2026-10-27
+Command:
+python -m coverage run --branch --source=src --omit="src/repl.py,src/__init__.py" -m pytest tests/test_mbt.py
+
+Result: 1 state-machine test passed; 25 examples, up to 40 steps.
+All 13 RPC methods and all 13 public data operations executed.
+Tuple storage and the full-outer-join selection: 100% branch coverage.
+Transport errors are checked separately and excluded from this run.
+
+Name                Stmts   Miss Branch BrPart  Cover   Missing
+---------------------------------------------------------------
+src\data_layer.py      67      0     22      0   100%
+src\rpc_client.py      64      4     10      4    89%   35, 44, 48, 58
+src\rpc_server.py      62      7     14      6    83%   58, 62-63, 73->76, 87, 98, 108, 127
+---------------------------------------------------------------
+TOTAL                 193     11     46     10    91%

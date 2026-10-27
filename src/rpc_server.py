@@ -22,43 +22,45 @@ def log_request(opcode: int, payload: dict) -> None:
         file.write(f"Код: {opcode}, Данные: {payload}\n")
 
 
+OPERATIONS = {
+    1: (data_layer.create_account, ("uid", "timestamp", "ip")),
+    2: (data_layer.get_all_accounts, ()),
+    3: (data_layer.get_account_by_id, ("uid",)),
+    4: (data_layer.update_account, ("uid", "timestamp", "ip")),
+    5: (
+        data_layer.create_message,
+        ("uid", "timestamp", "argument", "account", "completed"),
+    ),
+    6: (data_layer.get_all_messages, ()),
+    7: (data_layer.get_message_by_id, ("uid",)),
+    8: (
+        data_layer.update_message,
+        ("uid", "timestamp", "argument", "account", "completed"),
+    ),
+    9: (
+        data_layer.create_feedback,
+        ("uid", "timestamp", "result", "status", "failure", "message"),
+    ),
+    10: (data_layer.get_all_feedbacks, ()),
+    11: (data_layer.get_feedback_by_id, ("uid",)),
+    12: (
+        data_layer.update_feedback,
+        ("uid", "timestamp", "result", "status", "failure", "message"),
+    ),
+    13: (data_layer.select_recent_messages, ("now_timestamp",)),
+}
+
+
 def process_request(opcode: int, data: dict) -> tuple[int, dict]:
-    """Dispatch a request to the corresponding data-layer function."""
-    operations = {
-        1: lambda: data_layer.create_account(
-            data["uid"], data["ip"], data["timestamp"]
-        ),
-        2: data_layer.get_all_accounts,
-        3: lambda: data_layer.get_account_by_id(data["uid"]),
-        4: lambda: data_layer.update_account(
-            data["uid"], data["ip"], data["timestamp"]
-        ),
-        5: lambda: data_layer.create_message(
-            data["uid"], data["argument"], data["account"]
-        ),
-        6: data_layer.get_all_messages,
-        7: lambda: data_layer.get_message_by_id(data["uid"]),
-        8: lambda: data_layer.update_message(
-            data["uid"], data["argument"], data["account"]
-        ),
-        9: lambda: data_layer.create_log(
-            data["uid"], data["message"], data["status"]
-        ),
-        10: data_layer.get_all_logs,
-        11: lambda: data_layer.get_log_by_id(data["uid"]),
-        12: lambda: data_layer.update_log(
-            data["uid"], data["message"], data["status"]
-        ),
-        13: lambda: data_layer.select_recent_messages(
-            data["now_timestamp"]
-        ),
-    }
-
-    operation = operations.get(opcode)
-    if operation is None:
+    """Dispatch one of the thirteen variant 15 operations."""
+    entry = OPERATIONS.get(opcode)
+    if entry is None:
         return opcode, {"error": "Неизвестный код операции"}
-
-    return opcode, {"result": operation()}
+    operation, fields = entry
+    try:
+        return opcode, {"result": operation(*(data[key] for key in fields))}
+    except (KeyError, TypeError, ValueError) as error:
+        return opcode, {"error": str(error)}
 
 
 def run_server(host: str = HOST, port: int = PORT, ready_event=None) -> None:

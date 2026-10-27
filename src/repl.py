@@ -1,21 +1,8 @@
-"""Интерактивное меню для работы со слоем данных."""
+"""Интерактивное меню для схемы данных варианта 15."""
 
 import time
-from data_layer import (
-    create_account,
-    create_log,
-    create_message,
-    get_account_by_id,
-    get_all_accounts,
-    get_all_logs,
-    get_all_messages,
-    get_log_by_id,
-    get_message_by_id,
-    select_recent_messages,
-    update_account,
-    update_log,
-    update_message,
-)
+
+import data_layer
 
 MENU_TEXT = (
     "\n=== МЕНЮ БАЗЫ ДАННЫХ ===\n"
@@ -23,136 +10,81 @@ MENU_TEXT = (
     "3. Аккаунт по ID       4. Изменить аккаунт\n"
     "5. Создать сообщение     6. Все сообщения      "
     "7. Сообщение по ID    8. Изменить сообщение\n"
-    "9. Создать лог          10. Все логи          "
-    "11. Лог по ID         12. Изменить лог\n"
+    "9. Создать обратную связь  10. Вся обратная связь\n"
+    "11. Обратная связь по ID   12. Изменить обратную связь\n"
     "13. Выборка за 8 минут  0. Выход\n"
     "Выберите команду: "
 )
 
 
-def run_repl() -> None:
-    """Запускает интерактивный режим работы со слоем данных."""
-    while True:
-        choice = input(MENU_TEXT).strip()
-        if choice == "0":
-            break
-        execute_command(choice)
+ACCOUNT_FIELDS = (
+    ("ID аккаунта", int),
+    ("Временная метка аккаунта", int),
+    ("IP-адрес", str),
+)
+
+MESSAGE_FIELDS = (
+    ("ID сообщения", int),
+    ("Временная метка сообщения", int),
+    ("Текст сообщения", str),
+    ("ID аккаунта", int),
+    ("Признак завершения", int),
+)
+
+FEEDBACK_FIELDS = (
+    ("ID обратной связи", int),
+    ("Временная метка обратной связи", int),
+    ("Результат", str),
+    ("Статус", str),
+    ("Ошибка", str),
+    ("ID сообщения", int),
+)
 
 
-def _command_create_account() -> None:
-    """Создаёт аккаунт."""
-    uid = int(input("Введите ID аккаунта: "))
-    ip = input("Введите IP-адрес: ")
-    res = create_account(uid, ip, time.time())
-    print(f"Успешно создано: {res}")
+def _read_fields(fields: tuple) -> list:
+    """Считывает поля записи с преобразованием числовых значений."""
+    return [convert(input(f"{title}: ")) for title, convert in fields]
 
 
-def _command_list_accounts() -> None:
-    """Выводит все аккаунты."""
-    print(f"Все аккаунты: {get_all_accounts()}")
-
-
-def _command_find_account() -> None:
-    """Выводит аккаунт по ID."""
-    uid = int(input("Введите ID аккаунта: "))
-    print(f"Результат: {get_account_by_id(uid)}")
-
-
-def _command_update_account() -> None:
-    """Обновляет аккаунт."""
-    uid = int(input("Введите ID аккаунта: "))
-    ip = input("Введите новый IP: ")
-    res = update_account(uid, ip, time.time())
-    print(f"Результат обновления: {res}")
-
-
-def _command_create_message() -> None:
-    """Создаёт сообщение."""
-    uid = int(input("Введите ID сообщения: "))
-    arg = input("Введите текст: ")
-    acc = int(input("Введите ID аккаунта: "))
-    print(f"Создано: {create_message(uid, arg, acc)}")
-
-
-def _command_list_messages() -> None:
-    """Выводит все сообщения."""
-    print(f"Все сообщения: {get_all_messages()}")
-
-
-def _command_find_message() -> None:
-    """Выводит сообщение по ID."""
-    uid = int(input("Введите ID сообщения: "))
-    print(f"Результат: {get_message_by_id(uid)}")
-
-
-def _command_update_message() -> None:
-    """Обновляет сообщение."""
-    uid = int(input("Введите ID сообщения: "))
-    arg = input("Введите новый текст: ")
-    acc = int(input("Введите ID аккаунта: "))
-    print(f"Результат: {update_message(uid, arg, acc)}")
-
-
-def _command_create_log() -> None:
-    """Создаёт лог."""
-    uid = int(input("Введите ID лога: "))
-    msg = int(input("Введите ID сообщения: "))
-    st = input("Введите статус: ")
-    print(f"Создано: {create_log(uid, msg, st)}")
-
-
-def _command_list_logs() -> None:
-    """Выводит все логи."""
-    print(f"Все логи: {get_all_logs()}")
-
-
-def _command_find_log() -> None:
-    """Выводит лог по ID."""
-    uid = int(input("Введите ID лога: "))
-    print(f"Результат: {get_log_by_id(uid)}")
-
-
-def _command_update_log() -> None:
-    """Обновляет лог."""
-    uid = int(input("Введите ID лога: "))
-    msg = int(input("Введите ID сообщения: "))
-    st = input("Введите новый статус: ")
-    print(f"Результат: {update_log(uid, msg, st)}")
-
-
-def _command_recent_messages() -> None:
-    """Выводит выборку за последние восемь минут."""
-    res = select_recent_messages(time.time())
-    print(f"Результат выборки: {res}")
-
-
-COMMAND_HANDLERS = {
-    "1": _command_create_account,
-    "2": _command_list_accounts,
-    "3": _command_find_account,
-    "4": _command_update_account,
-    "5": _command_create_message,
-    "6": _command_list_messages,
-    "7": _command_find_message,
-    "8": _command_update_message,
-    "9": _command_create_log,
-    "10": _command_list_logs,
-    "11": _command_find_log,
-    "12": _command_update_log,
-    "13": _command_recent_messages,
+COMMANDS = {
+    "1": (data_layer.create_account, ACCOUNT_FIELDS),
+    "2": (data_layer.get_all_accounts, ()),
+    "3": (data_layer.get_account_by_id, ACCOUNT_FIELDS[:1]),
+    "4": (data_layer.update_account, ACCOUNT_FIELDS),
+    "5": (data_layer.create_message, MESSAGE_FIELDS),
+    "6": (data_layer.get_all_messages, ()),
+    "7": (data_layer.get_message_by_id, MESSAGE_FIELDS[:1]),
+    "8": (data_layer.update_message, MESSAGE_FIELDS),
+    "9": (data_layer.create_feedback, FEEDBACK_FIELDS),
+    "10": (data_layer.get_all_feedbacks, ()),
+    "11": (data_layer.get_feedback_by_id, FEEDBACK_FIELDS[:1]),
+    "12": (data_layer.update_feedback, FEEDBACK_FIELDS),
 }
 
 
 def execute_command(choice: str) -> None:
-    """Обрабатывает и выполняет выбранную команду меню."""
-    handler = COMMAND_HANDLERS.get(choice)
-    if handler is None:
+    """Выполняет команду, сообщая об ошибках пользовательского ввода."""
+    if choice == "13":
+        print(f"Результат: {data_layer.select_recent_messages(time.time())}")
+        return
+    entry = COMMANDS.get(choice)
+    if entry is None:
         print("Неверный код команды!")
         return
+    operation, fields = entry
     try:
-        handler()
-    except ValueError as err:
-        print(f"Ошибка ввода данных: {err}")
+        print(f"Результат: {operation(*_read_fields(fields))}")
+    except ValueError as error:
+        print(f"Ошибка ввода данных: {error}")
+
+
+def run_repl() -> None:
+    """Выполняет команды до ввода нуля."""
+    while True:
+        choice = input(MENU_TEXT).strip()
+        if choice == "0":
+            return
+        execute_command(choice)
 
 
 if __name__ == "__main__":
