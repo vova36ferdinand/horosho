@@ -104,3 +104,26 @@ def test_connection_error_does_not_exit_menu(monkeypatch, capsys):
     monkeypatch.setattr("builtins.input", lambda prompt: next(answers))
     repl.run_repl(backend)
     assert "Ошибка подключения к серверу:" in capsys.readouterr().out
+
+
+def test_python_client_script_runs_all_operations_on_server(remote_server):
+    """The script calls all thirteen RPC operations on another process."""
+    backend, journal = remote_server
+    root = Path(__file__).resolve().parents[1]
+    result = subprocess.run(
+        [sys.executable, "client.py", "--host", backend.host,
+         "--port", str(backend.port)], cwd=root, capture_output=True,
+        text=True, encoding="utf-8", timeout=5,
+        env=dict(os.environ, PYTHONIOENCODING="utf-8"),
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    codes = [int(line.split(",")[0].split(":")[1])
+             for line in journal.read_text(encoding="utf-8").splitlines()]
+    assert codes == list(range(1, 14))
+    assert "13. Выборка по формуле:" in result.stdout
+    assert "Сообщение обновлено" in result.stdout
+    other_client = RPCClient(host=backend.host, port=backend.port)
+    assert other_client.get_message_by_id(1)[2:] == [
+        "Сообщение обновлено", 1, 1
+    ]
+    assert other_client.get_feedback_by_id(1)[2:] == ["ok", "done", "", 1]
