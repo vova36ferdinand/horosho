@@ -1,8 +1,10 @@
 """Интерактивное меню для схемы данных варианта 15."""
 
+import argparse
 import time
 
 import data_layer
+from rpc_client import RPCClient
 
 MENU_TEXT = (
     "\n=== МЕНЮ БАЗЫ ДАННЫХ ===\n"
@@ -47,45 +49,67 @@ def _read_fields(fields: tuple) -> list:
 
 
 COMMANDS = {
-    "1": (data_layer.create_account, ACCOUNT_FIELDS),
-    "2": (data_layer.get_all_accounts, ()),
-    "3": (data_layer.get_account_by_id, ACCOUNT_FIELDS[:1]),
-    "4": (data_layer.update_account, ACCOUNT_FIELDS),
-    "5": (data_layer.create_message, MESSAGE_FIELDS),
-    "6": (data_layer.get_all_messages, ()),
-    "7": (data_layer.get_message_by_id, MESSAGE_FIELDS[:1]),
-    "8": (data_layer.update_message, MESSAGE_FIELDS),
-    "9": (data_layer.create_feedback, FEEDBACK_FIELDS),
-    "10": (data_layer.get_all_feedbacks, ()),
-    "11": (data_layer.get_feedback_by_id, FEEDBACK_FIELDS[:1]),
-    "12": (data_layer.update_feedback, FEEDBACK_FIELDS),
+    "1": ("create_account", ACCOUNT_FIELDS),
+    "2": ("get_all_accounts", ()),
+    "3": ("get_account_by_id", ACCOUNT_FIELDS[:1]),
+    "4": ("update_account", ACCOUNT_FIELDS),
+    "5": ("create_message", MESSAGE_FIELDS),
+    "6": ("get_all_messages", ()),
+    "7": ("get_message_by_id", MESSAGE_FIELDS[:1]),
+    "8": ("update_message", MESSAGE_FIELDS),
+    "9": ("create_feedback", FEEDBACK_FIELDS),
+    "10": ("get_all_feedbacks", ()),
+    "11": ("get_feedback_by_id", FEEDBACK_FIELDS[:1]),
+    "12": ("update_feedback", FEEDBACK_FIELDS),
 }
 
 
-def execute_command(choice: str) -> None:
+def execute_command(choice: str, backend=data_layer) -> None:
     """Выполняет команду, сообщая об ошибках пользовательского ввода."""
-    if choice == "13":
-        print(f"Результат: {data_layer.select_recent_messages(time.time())}")
-        return
-    entry = COMMANDS.get(choice)
-    if entry is None:
-        print("Неверный код команды!")
-        return
-    operation, fields = entry
     try:
-        print(f"Результат: {operation(*_read_fields(fields))}")
+        if choice == "13":
+            result = backend.select_recent_messages(time.time())
+        else:
+            entry = COMMANDS.get(choice)
+            if entry is None:
+                print("Неверный код команды!")
+                return
+            name, fields = entry
+            result = getattr(backend, name)(*_read_fields(fields))
+        print(f"Результат: {result}")
     except ValueError as error:
         print(f"Ошибка ввода данных: {error}")
+    except OSError as error:
+        print(f"Ошибка подключения к серверу: {error}")
+        print("Проверьте, что RPC-сервер запущен по указанному адресу.")
 
 
-def run_repl() -> None:
+def run_repl(backend=data_layer) -> None:
     """Выполняет команды до ввода нуля."""
     while True:
         choice = input(MENU_TEXT).strip()
         if choice == "0":
             return
-        execute_command(choice)
+        execute_command(choice, backend)
+
+
+def main() -> None:
+    """Запускает локальное меню или подключает его к TCP RPC-серверу."""
+    parser = argparse.ArgumentParser(description="Меню базы данных")
+    parser.add_argument("--rpc", action="store_true",
+                        help="Выполнять команды через RPC-сервер")
+    parser.add_argument("--host", default="127.0.0.1",
+                        help="Адрес RPC-сервера")
+    parser.add_argument("--port", type=int, default=8080,
+                        help="Порт RPC-сервера")
+    args = parser.parse_args()
+    if not 1 <= args.port <= 65535:
+        parser.error("Порт должен быть от 1 до 65535")
+    backend = RPCClient(args.host, args.port) if args.rpc else data_layer
+    if args.rpc:
+        print(f"Режим RPC: {args.host}:{args.port}")
+    run_repl(backend)
 
 
 if __name__ == "__main__":
-    run_repl()
+    main()
