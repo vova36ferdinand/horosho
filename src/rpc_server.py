@@ -1,5 +1,6 @@
 """TCP RPC server exposing the data-layer operations."""
 
+import argparse
 import json
 import socket
 
@@ -123,5 +124,24 @@ def handle_connection(connection: socket.socket) -> None:
         connection.close()
 
 
+def main() -> None:
+    """Start the RPC server using the selected local address and port."""
+    parser = argparse.ArgumentParser(description="TCP RPC-сервер")
+    parser.add_argument("--host", default=HOST, help="Адрес сервера")
+    parser.add_argument("--port", type=int, default=PORT, help="Порт сервера")
+    args = parser.parse_args()
+    if not 1 <= args.port <= 65535:
+        parser.error("Порт должен быть от 1 до 65535")
+    try:
+        run_server(args.host, args.port)
+    except OSError as error:
+        parser.exit(1, f"Ошибка RPC-сервера: {error}\n"
+                    "Если порт занят или зарезервирован, выберите другой:\n"
+                    "py src/rpc_server.py --port 8081\n"
+                    "Укажите тот же --port при запуске клиента.\n")
+    except KeyboardInterrupt:
+        print("\nСервер остановлен.")
+
+
 if __name__ == "__main__":
-    run_server()
+    main()

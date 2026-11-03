@@ -21,11 +21,9 @@ def remote_server(tmp_path):
     with socket.socket() as probe:
         probe.bind(("127.0.0.1", 0))
         port = probe.getsockname()[1]
-    code = ("import sys; sys.path.insert(0, sys.argv[1]); "
-            "from rpc_server import run_server; "
-            "run_server(port=int(sys.argv[2]))")
     process = subprocess.Popen(
-        [sys.executable, "-u", "-c", code, str(source), str(port)],
+        [sys.executable, "-u", str(source / "rpc_server.py"),
+         "--host", "127.0.0.1", "--port", str(port)],
         cwd=tmp_path, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
         env=dict(os.environ, PYTHONIOENCODING="utf-8"),
     )
